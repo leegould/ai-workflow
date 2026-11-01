@@ -474,3 +474,19 @@ to ask what the code answers.
 - **Guardrail seen working:** the build agent tried to edit files with a Python script,
   was denied (not in its allow-list, and `--permission-prompts none` means no hang), and
   switched to the edit tool. It said so in its own summary.
+
+### D48. Databases change the revert story: guard data before deploy, keep code revertable
+**Direction, not built** (Lee's point). Revert-first (D7, D41) works here because reverting
+code is cheap. Once a change includes a migration, you "live in a different world": old
+code may not understand the new schema, so many teams never revert in practice.
+- **Keep code revertable with expand/contract:** add the new structure without removing
+  anything, deploy code that uses it, and remove the old structure later in a separate
+  change. Migrations only go forward. A code revert is always safe, because the old code
+  ignores the new structure.
+- **Stop before deploy rather than revert after:**
+  - Migrations already raise the risk floor (D6), so a human sees them.
+  - Add a mechanical check: fail a change that ships a migration together with the code
+    that depends on it, or one that drops or renames something.
+  - Run the migration as its own step, against a copy of the database first. A failure
+    there stops the ticket before anything irreversible happens.
+- Revert stays the safety net for code. Gates before deploy protect data.
